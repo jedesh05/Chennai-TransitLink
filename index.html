@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#102241">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Chennai TransitLink | Journey planner</title>
+<link rel="stylesheet" href="styles.css">
+<script defer src="assets/data.js"></script>
+<script defer src="assets/rail-geography.js"></script>
+<script defer src="assets/mtc.js"></script>
+<script defer src="network.js"></script>
+<script defer src="assets/tourist-places.js"></script>
+<script defer src="app.js"></script>
+<script defer src="auth-config.js"></script>
+<script defer src="auth.js"></script>
+<script defer src="assets/uploaded-map.js"></script>
+<script defer src="assets/metro-geography.js"></script>
+<script defer src="uploaded-map.js"></script>
+<script defer src="preferences.js"></script>
+</head>
+<body>
+<header><div class="shell top"><a class="brand" href="#"><img class="brand-logo" src="assets/logo.png" alt="" width="54" height="40"><span class="brand-text"><span class="wordmark">Transit<span>Link</span></span><small>Chennai</small></span></a><div class="header-actions"><div class="header-clock"><span class="clock-lamp" aria-hidden="true"></span><time id="clock" title="Chennai time"><span id="clock-minute">--:--</span><span id="clock-seconds">:--</span></time></div><button id="settings-open" type="button" aria-label="Settings" title="Settings" aria-haspopup="dialog"><span class="settings-gear" aria-hidden="true"></span></button></div></div></header>
+<dialog id="account-dialog" aria-labelledby="account-title">
+<h2 id="account-title">Log in to TransitLink</h2>
+<p id="auth-status" role="status"></p>
+<div id="auth-methods" hidden>
+<button id="auth-google" class="primary" type="button">Continue with Google</button>
+<details><summary>Email</summary>
+<form id="auth-email">
+<label>Email address<input id="auth-address" type="email" required autocomplete="email"></label>
+<label>Password<input id="auth-password" type="password" required autocomplete="current-password"></label>
+<div class="account-dialog-actions"><button type="submit" value="login">Log in</button><button type="submit" value="register">Create account</button><button type="button" id="auth-reset">Reset password</button></div>
+</form>
+</details>
+<details id="auth-phone-details"><summary>Phone number</summary>
+<form id="auth-phone">
+<label>Phone with country code<input id="auth-number" type="tel" required autocomplete="tel" placeholder="+919876543210"></label>
+<p class="muted">Google processes your number to verify sign-in. SMS rates may apply.</p>
+<div id="auth-recaptcha"></div>
+<button type="submit">Send SMS code</button>
+</form>
+<form id="auth-code" hidden>
+<label>SMS code<input id="auth-otp" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}"></label>
+<button type="submit">Verify code</button>
+</form>
+</details>
+</div>
+<details><summary>Use a local profile</summary>
+<form id="account-form">
+<p class="muted">Use a name to keep your saved trips separate in this browser. Profiles on this device are accessible by name.</p>
+<label>Profile name<input id="profile-name" maxlength="40" required autocomplete="nickname" autofocus></label>
+<p id="account-error" role="status"></p>
+<button type="submit">Open local profile</button>
+</form></details>
+<button id="account-cancel" type="button">Close</button>
+</dialog>
+<dialog id="settings-dialog" aria-labelledby="settings-title"><div class="heading"><h2 id="settings-title">Settings</h2><button id="settings-close" type="button" autofocus>Close</button></div><div class="display-preferences" role="group" aria-label="Language and appearance">
+<label><span>Language<small>Choose the language for menus and buttons.</small></span><select id="interface-language"><option value="en">English</option><option value="ta" lang="ta">தமிழ்</option><option value="hi" lang="hi">हिन्दी</option></select></label>
+<label><span>Appearance<small>Switch between light and dark views.</small></span><select id="interface-theme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+<label><span>Text size<small>Make labels and directions easier to read.</small></span><select id="interface-text-size"><option value="standard">Standard</option><option value="large">Large</option></select></label><label><span>Reduce motion<small>Keep decorative lights still.</small></span><input id="interface-reduce-motion" type="checkbox"></label></div><div class="settings-account"><span>Account<small>Manage your TransitLink sign-in.</small></span><button id="account-button" type="button">Log in</button></div></dialog>
+<main class="shell">
+<div id="trip-view" class="workspace-view"><section class="hero"><div class="hero-lights" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="hero-copy"><h1>Find your way <em>through Chennai.</em></h1><p>From a sunrise at Marina to the ride home, find your way across Chennai. Compare bus, Metro and train journeys, and see where to board and change.</p><nav class="quick-modes" aria-label="Quick links">
+<a href="#planner">Plan a trip</a>
+<a href="#arrival-guide">Just arrived?</a>
+<a href="#bus-column-title">MTC bus routes</a>
+<a href="#tourist-places">Tourist places</a>
+<a href="#station-metro-title">Metro timetable</a>
+<a href="#metro-column-title">Metro routes</a>
+<a href="#station-rail-title">Suburban / MRTS timetable</a>
+<a href="#rail-column-title">Suburban / MRTS routes</a>
+</nav></div><img src="assets/hero-logo.png" alt="TransitLink logo with a Chennai bus, suburban train and Metro"></section>
+<section class="panel arrival-guide" id="arrival-guide" aria-labelledby="arrival-title">
+<h2 id="arrival-title">Just arrived in Chennai?</h2>
+<p class="muted">Choose where you arrived, then look up your destination by landmark or stop.</p>
+<div id="arrival-points" role="group" aria-label="Where you arrived">
+<button type="button" data-arrival="Chennai Central" aria-pressed="false">Central</button>
+<button type="button" data-arrival="Egmore" aria-pressed="false">Egmore</button>
+<button type="button" data-arrival="Tirusulam / Airport" aria-pressed="false">Airport</button>
+<button type="button" data-arrival="Kilambakkam Bus Terminus" aria-pressed="false">KCBT</button>
+<button type="button" data-arrival="CMBT" aria-pressed="false">CMBT</button>
+</div>
+<label for="arrival-destination">Where are you going?</label>
+<input id="arrival-destination" type="search" autocomplete="off" placeholder="Try Marina Beach or Government Museum">
+<p id="arrival-status" class="muted" role="status"></p>
+<ul id="arrival-matches" hidden></ul>
+</section>
+<section class="panel" id="planner" aria-labelledby="planner-title">
+<div class="heading"><h2 id="planner-title">Plan &amp; Routes</h2><button class="locate" type="button" id="locate"><span aria-hidden="true">◎</span> Use my location</button></div>
+<div id="location-prompt" hidden>
+<p>Use your location to find nearby boarding stops?</p><button id="location-enable" type="button">Enable location</button> <button id="location-manual" type="button">Enter a stop</button>
+</div>
+<p id="location-status" class="muted" role="status"></p>
+<form id="plan">
+<div class="trip-path">
+<label class="stop-field start"><span>From</span><input id="from" list="from-options" placeholder="Search an area or stop" autocomplete="off" required><datalist id="from-options"></datalist></label>
+<button type="button" id="swap" aria-label="Swap origin and destination" title="Swap origin and destination">⇅</button>
+<label class="stop-field end"><span>To</span><input id="to" list="to-options" placeholder="Search an area or stop" autocomplete="off" required><datalist id="to-options"></datalist></label>
+</div>
+<div class="planner-settings">
+<label>Route preference<select id="preference"><option value="fastest">Quickest arrival</option><option value="transfers">Fewer transfers</option><option value="stops">Fewer stops</option></select></label>
+<label>Departure time (IST, optional)<input id="departure" type="datetime-local" aria-describedby="departure-note"><small id="departure-note">Leave blank to leave now.</small></label>
+</div>
+<fieldset class="travel-modes"><legend>Travel modes</legend>
+<div class="mode-select">
+<label class="mode-card bus"><input type="checkbox" name="mode" value="1" checked><span>MTC Bus<small>Routes and schedules</small></span></label>
+<label class="mode-card metro"><input type="checkbox" name="mode" value="4" checked><span>Metro<small>Lines and stations</small></span></label>
+<label class="mode-card rail"><input type="checkbox" name="mode" value="2" checked><span>Suburban / MRTS<small>Train schedules</small></span></label>
+</div></fieldset>
+<details class="trip-options"><summary>Via stop and holiday service</summary><label>Via stop<input id="via" list="via-options" placeholder="Add an intermediate stop" autocomplete="off"><datalist id="via-options"></datalist></label><label class="holiday-check"><input type="checkbox" id="holiday" aria-describedby="holiday-note"> Holiday service (Suburban, MRTS &amp; Metro)</label><p class="muted" id="holiday-note" hidden>Uses Sunday timetables for the selected date. Check operator notices for holiday changes.</p></details>
+<div class="planner-action"><button class="primary" type="submit">Find connections <span aria-hidden="true">→</span></button><button type="button" id="resume-follow" hidden>Resume trip guide</button><p id="feedback" role="status"></p></div>
+</form></section>
+<section id="results" class="panel" hidden aria-label="Journey results"></section>
+<section id="directory" class="panel" aria-labelledby="directory-title">
+<div class="heading"><h2 id="directory-title">Routes &amp; stops</h2></div>
+<nav class="route-shortcuts" aria-label="Transit directories and network maps"><a href="#bus-column-title">MTC Bus Routes</a><a href="#metro-column-title">Metro Lines</a><a href="#rail-column-title">Suburban &amp; MRTS Services</a><a href="#metro-slide">Chennai Metro</a></nav>
+<div class="service-columns"><section class="service-column bus" aria-labelledby="bus-column-title">
+<h3 id="bus-column-title">MTC Bus</h3>
+<label>Search <input id="bus-search" type="search" placeholder="Bus number or stop"></label>
+<label>Route and direction<select id="bus-services"></select></label>
+<div id="bus-service-detail" class="detail"></div>
+</section><section class="service-column metro" aria-labelledby="metro-column-title">
+<h3 id="metro-column-title">Metro</h3>
+<label>Search <input id="metro-search" type="search" placeholder="Line or station"></label>
+<label>Metro service<select id="metro-services"></select></label>
+<div id="metro-service-detail" class="detail"></div>
+</section><section class="service-column rail" aria-labelledby="rail-column-title">
+<h3 id="rail-column-title">Suburban / MRTS</h3>
+<label>Search <input id="rail-search" type="search" placeholder="Train number or station"></label>
+<label>Train<select id="rail-services"></select></label>
+<div id="rail-service-detail" class="detail"></div>
+</section></div>
+<section id="rail-map" class="rail-map" aria-labelledby="rail-map-title">
+<div class="heading"><h3 id="rail-map-title">Rail network maps</h3></div>
+<div class="rail-map-switch" role="group" aria-label="Rail map slide"><button id="rail-slide-suburban" type="button" aria-pressed="true">Suburban / MRTS</button><button id="rail-slide-metro" type="button" aria-pressed="false">Chennai Metro</button></div>
+<div id="suburban-slide">
+<div class="rail-map-controls" aria-label="Map controls"><button id="rail-zoom-in" type="button" aria-label="Zoom in">+</button><button id="rail-zoom-out" type="button" aria-label="Zoom out">−</button><button id="rail-fit" type="button">Fit route</button><button id="rail-fit-network" type="button">Show all lines</button><button id="rail-all-stations" type="button" aria-pressed="false">Show all station names</button><output id="rail-zoom-level" aria-label="Map zoom">100%</output></div><p id="rail-gesture-help" class="muted">Drag to move the map. Pinch or use + and − to zoom.</p>
+<div class="rail-map-frame"><div id="rail-diagram" class="rail-diagram" aria-describedby="rail-gesture-help" role="group" aria-label="Rail station map. Scroll to explore and select a station for its schedule." tabindex="0"></div><div class="rail-overlay-zoom" role="group" aria-label="Rail map zoom"><button id="rail-overlay-in" type="button" aria-label="Zoom in on rail map" title="Zoom in"><span class="rail-magnifier" aria-hidden="true">+</span></button><button id="rail-overlay-out" type="button" aria-label="Zoom out on rail map" title="Zoom out"><span class="rail-magnifier" aria-hidden="true">−</span></button></div></div>
+<p class="muted rail-attribution">Station data from DataMeet and © OpenStreetMap contributors. Coastline from Natural Earth.</p>
+<p id="rail-station-info" class="muted" aria-live="polite"></p>
+</div>
+<div id="metro-slide" hidden>
+<div class="rail-map-controls" aria-label="Metro map controls"><button id="metro-zoom-in" type="button" aria-label="Zoom in on Metro map">+</button><button id="metro-zoom-out" type="button" aria-label="Zoom out on Metro map">−</button><button id="metro-map-fit" type="button">Fit map</button><output id="metro-map-status" aria-label="Metro map zoom">100%</output></div>
+<div id="metro-line-map" aria-label="Metro line colors"></div>
+<p class="muted" id="metro-map-help">Drag to move. Pinch or use + and − to zoom. Tap a station pin for its timetable.</p>
+<canvas id="metro-map" tabindex="0" role="img" aria-label="Geographic map of Chennai Metro lines" aria-describedby="metro-map-help"></canvas>
+<p class="muted rail-attribution">© OpenStreetMap contributors · ODbL</p>
+</div>
+</section></section>
+</div>
+<section id="stations" class="panel workspace-view" aria-labelledby="stations-title">
+<h2 id="stations-title">Station boards</h2><p id="service-update-status" class="muted" role="status">Schedule only · no operator update feed connected.</p>
+<div class="station-boards">
+<section class="station-board" data-network="metro" aria-labelledby="station-metro-title">
+<div class="heading"><h3 id="station-metro-title">Metro</h3><span class="muted" data-board-clock></span></div>
+<label>Station<select data-board-select></select></label>
+<p class="muted">Estimated times. Intermediate arrivals and departures share the same estimated station time.</p>
+<div class="station-display"><div class="display-heading"><span data-display-station></span><span class="display-source"></span></div><div class="station-table"><table><thead><tr><th scope="col">Service</th><th scope="col">Arrival (IST)</th><th scope="col">Departure (IST)</th><th scope="col">Direction</th></tr></thead>
+<tbody data-board-rows></tbody></table></div></div>
+<p class="muted" data-board-empty hidden>No more trains scheduled here today.</p>
+</section><section class="station-board" data-network="rail" aria-labelledby="station-rail-title">
+<div class="heading"><h3 id="station-rail-title">Suburban / MRTS</h3><span class="muted" data-board-clock></span></div>
+<label>Station<select data-board-select></select></label>
+<p class="muted">Scheduled times from the suburban timetable and added MEMU schedules.</p><p class="muted fast-note"><strong>Fast and semi-fast locals</strong> stop at selected stations and skip others. Check that your destination is a listed stop.</p><label class="fast-filter"><input type="checkbox" id="fast-only"> Show only fast and semi-fast locals</label><label class="fast-filter"><input type="checkbox" id="memu-only"> Show only MEMU</label>
+<div class="station-display"><div class="display-heading"><span data-display-station></span><span class="display-source"></span></div><div class="station-table"><table><thead><tr><th scope="col">Service</th><th scope="col">Arrival (IST)</th><th scope="col">Departure (IST)</th><th scope="col">Direction</th></tr></thead>
+<tbody data-board-rows></tbody></table></div></div>
+<p class="muted" data-board-empty hidden>No more trains scheduled here today.</p>
+</section>
+</div></section>
+<section id="map" class="panel workspace-view" aria-labelledby="map-title">
+<div class="heading"><h2 id="map-title">Map</h2></div>
+<div id="journey-map-summary" class="journey-map-summary" hidden>
+<h3 id="journey-map-title"></h3>
+<p id="journey-map-note" class="muted"></p>
+<div class="route-shortcuts"><a href="#results">Back to journey results</a><button type="button" id="clear-journey-map">Clear journey</button></div>
+</div>
+<div id="uploaded-map-stage">
+<div class="map-place-search">
+<label for="map-place-input">Find a place on the map</label>
+<input id="map-place-input" type="search" autocomplete="off" placeholder="Search for a town, street, stop or landmark">
+<p id="map-place-status" class="muted" role="status"></p>
+<ul id="map-place-matches" hidden></ul>
+</div>
+<div class="rail-map-controls" aria-label="Map controls">
+<button id="uploaded-zoom-in" type="button" aria-label="Zoom in">+</button>
+<button id="uploaded-zoom-out" type="button" aria-label="Zoom out">−</button>
+<button id="uploaded-map-fit" type="button">Fit map</button>
+<button id="uploaded-map-expand" type="button" aria-haspopup="dialog">Expand map</button>
+<output id="uploaded-map-status" aria-label="Map zoom">100%</output></div>
+<p id="uploaded-map-help" class="muted">Drag to move. Pinch, double-tap, or use + and − to zoom.</p>
+<canvas id="uploaded-map" tabindex="0" role="img" aria-label="Map of Chennai and surrounding areas from your uploaded OpenStreetMap export" aria-describedby="uploaded-map-help"></canvas>
+</div>
+<dialog id="uploaded-map-dialog" aria-labelledby="map-title"></dialog>
+<details class="map-credits"><summary>Map credits</summary><p class="muted">© OpenStreetMap contributors · Open Database License (ODbL)</p></details>
+</section>
+<section id="tourist-places" class="panel workspace-view" aria-labelledby="tourist-title">
+<div class="tourist-masthead">
+<h2 id="tourist-title">Explore Chennai &amp; beyond</h2>
+<p>Find a beach, a museum, or your next match. Pick a category or search by place or neighbourhood.</p>
+<div class="tourist-quick" role="group" aria-label="Featured categories">
+<button type="button" data-tourist-category="0" aria-pressed="false"><span class="heritage-coin coast" aria-hidden="true"><i></i></span>Beaches</button>
+<button type="button" data-tourist-category="1" aria-pressed="false"><span class="heritage-coin temple" aria-hidden="true"><i></i></span>Temples</button>
+<button type="button" data-tourist-category="3" aria-pressed="false"><span class="heritage-coin monument" aria-hidden="true"><i></i></span>Monuments</button>
+<button type="button" data-tourist-category="4" aria-pressed="false"><span class="heritage-coin museum" aria-hidden="true"><i></i></span>Museums</button>
+<button type="button" data-tourist-category="zoo" aria-pressed="false"><span class="heritage-coin zoo" aria-hidden="true"><i></i></span>Zoos &amp; wildlife</button>
+<button type="button" data-tourist-category="8" aria-pressed="false"><span class="heritage-coin stadium" aria-hidden="true"><i></i></span>Stadiums</button>
+</div>
+</div>
+<div class="tourist-filters">
+<label>Search places<input id="tourist-search" type="search" placeholder="Marina, museum, Mylapore…"></label>
+</div>
+<p class="muted" id="tourist-empty" role="status" hidden>No places match these filters.</p>
+<div id="tourist-results" class="tourist-grid"></div>
+</section>
+<section id="saved" class="panel workspace-view" aria-labelledby="saved-title"><div class="heading"><h2 id="saved-title">Saved trips</h2></div><p class="muted">Rerun a saved journey using the current Chennai time.</p><div id="saved-trips"></div><p id="save-status" role="status"></p></section>
+</main>
+<dialog id="share-trip-dialog" aria-labelledby="share-trip-title">
+<h2 id="share-trip-title">Share this journey</h2>
+<label for="share-trip-text">Trip card</label>
+<textarea id="share-trip-text" readonly rows="8"></textarea>
+<p id="share-trip-status" class="muted" role="status"></p>
+<div class="account-dialog-actions"><button id="share-trip-copy" type="button">Copy trip</button><button id="share-trip-close" type="button">Close</button></div>
+</dialog>
+<dialog id="follow-trip-dialog" aria-labelledby="follow-trip-title">
+<div class="heading"><h2 id="follow-trip-title">Follow this trip</h2><button id="follow-close" type="button" aria-label="Close trip guide">Close</button></div>
+<p id="follow-destination" class="muted"></p>
+<p id="follow-progress" role="status"></p>
+<div id="follow-instruction" aria-live="polite"></div>
+<div class="follow-controls"><button id="follow-previous" type="button">Previous</button><button id="follow-next" class="primary" type="button">Next step</button></div>
+<div class="follow-controls"><button id="follow-conductor" type="button" hidden>Show this to the conductor</button><button id="follow-missed" type="button">I missed my connection</button></div>
+<div id="follow-conductor-card" hidden></div>
+</dialog>
+<button id="passenger-guide-open" type="button" aria-haspopup="dialog" aria-label="Chat with Vazhi"><span class="vazhi-icon" aria-hidden="true"></span>Ask Vazhi</button>
+<dialog id="passenger-guide" aria-labelledby="passenger-guide-title">
+<div class="guide-heading"><span class="vazhi-avatar" aria-hidden="true"><span class="vazhi-icon"></span></span><div><h2 id="passenger-guide-title">Vazhi</h2><p>TransitLink passenger guide</p></div><div class="guide-header-actions"><button id="guide-new-chat" type="button">New chat</button><button id="passenger-guide-close" type="button" aria-label="Close Vazhi" autofocus>×</button></div></div>
+<div id="guide-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+<div class="guide-prompts" aria-label="Common questions">
+<button type="button">Central to Airport</button><button type="button">Which bus terminal?</button><button type="button">How do I buy tickets?</button>
+</div>
+<form id="guide-form">
+<label for="guide-input">Ask a transit question</label>
+<div><input id="guide-input" type="text" maxlength="240" autocomplete="off" required placeholder="From Egmore to Marina Beach"><button type="submit">Send</button></div>
+</form>
+</dialog>
+<nav class="app-nav" aria-label="Commuter tools"><a href="#trip-view" aria-current="location">Plan &amp; Routes</a><a href="#stations">Stations</a><a href="#map">Map</a><a href="#tourist-places">Explore</a></nav>
+</body>
+</html>
+
+
+
+
+
+
